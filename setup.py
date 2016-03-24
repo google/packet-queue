@@ -1,0 +1,39 @@
+# Copyright 2016 Google Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Setup module for packet queue"""
+
+from setuptools import setup, find_packages
+from codecs import open
+from os import path
+
+setup(
+    name='packet_queue',
+    version='0.1.0',
+
+    description='Packet-based impaired network library',
+    packages=find_packages(exclude=['contrib', 'docs', 'tests']),
+
+    dependency_links=[
+        'https://github.com/brian-goldman/python-netfilterqueue/tarball/master#egg=netfilterqueue-1000',
+    ],
+    install_requires=[
+        'twisted', 'ipython', 'python-iptables', 'netifaces', 'netfilterqueue==1000',
+    ],
+    scripts=[
+        'scripts/impaired_network_server',
+        'scripts/impaired_network_shell',
+        'scripts/impaired_network_clear_iptables',
+    ]
+)
