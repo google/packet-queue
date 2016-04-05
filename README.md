@@ -37,16 +37,17 @@ In addition, this package will install several scripts into `PATH`:
 
 ## Unit tests
 
-Install Nose, the test runner, if you don't have it:
+You can run most of the tests like this:
 
 ```
-pip install nose
+python -m unittest discover tests  # run all tests in the tests/ directory
 ```
 
-Run the tests:
+Some of the end-to-end tests will be skipped with the above command because
+they require root:
 
 ```
-nosetests tests  # run all tests in the tests/ directory
+sudo python tests/test_e2e.py
 ```
 
 ## Trying it out: UDP proxy
