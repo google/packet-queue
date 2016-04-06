@@ -26,7 +26,7 @@ class FakeReactor(object):
     self.queue = []
     self.time = 0.0
 
-  def AdvanceTime(self, seconds):
+  def advance_time(self, seconds):
     self.time += seconds
     while self.queue:
       time, callback = self.queue[0]
@@ -50,20 +50,20 @@ class FakeReactorTest(unittest.TestCase):
       self.called.append(obj)
     return callback
 
-  def testCallbacks(self):
+  def test_callbacks(self):
     self.reactor.callLater(0.0, self.Add(1))
     self.reactor.callLater(0.5, self.Add(2))
     self.reactor.callLater(1.0, self.Add(3))
     self.assertItemsEqual(self.called, [])
 
-    self.reactor.AdvanceTime(0.0)
+    self.reactor.advance_time(0.0)
     self.assertItemsEqual(self.called, [1])
 
-    self.reactor.AdvanceTime(0.5)
+    self.reactor.advance_time(0.5)
     self.assertItemsEqual(self.called, [1, 2])
     self.reactor.callLater(0.5, self.Add(4))
 
-    self.reactor.AdvanceTime(0.5)
+    self.reactor.advance_time(0.5)
     self.assertItemsEqual(self.called, [1, 2, 3, 4])
 
 
@@ -74,106 +74,106 @@ class PipeTest(unittest.TestCase):
     self.reactor = FakeReactor()
     simulation.reactor = self.reactor
 
-  def Configure(self, **kwargs):
+  def configure(self, **kwargs):
     self.pipe.params.update(kwargs)
 
-  def Send(self, obj, size=0):
+  def send(self, obj, size=0):
     def callback():
       self.received.append(obj)
-    self.pipe(callback, size)
+    self.pipe.attempt(callback, size)
 
-  def Wait(self, seconds):
-    self.reactor.AdvanceTime(seconds)
+  def wait(self, seconds):
+    self.reactor.advance_time(seconds)
 
-  def Expect(self, received):
+  def expect(self, received):
     self.assertItemsEqual(self.received, received)
 
-  def testConstantDelay(self):
-    self.Configure(delay=0.5)
+  def test_constant_delay(self):
+    self.configure(delay=0.5)
 
-    self.Send(1)
-    self.Send(2)
-    self.Expect([])
+    self.send(1)
+    self.send(2)
+    self.expect([])
 
-    self.Wait(0.5)
-    self.Send(3)
-    self.Expect([1, 2])
+    self.wait(0.5)
+    self.send(3)
+    self.expect([1, 2])
 
-    self.Wait(0.5)
-    self.Expect([1, 2, 3])
+    self.wait(0.5)
+    self.expect([1, 2, 3])
 
-  def testThrottle(self):
-    self.Configure(bandwidth=4096)
+  def test_throttle(self):
+    self.configure(bandwidth=4096)
 
-    self.Send(1, 1024)
-    self.Send(2, 2048)
-    self.Send(3, 0)
-    self.Expect([])
+    self.send(1, 1024)
+    self.send(2, 2048)
+    self.send(3, 0)
+    self.expect([])
 
-    self.Wait(0.25)
-    self.Expect([1])
+    self.wait(0.25)
+    self.expect([1])
 
-    self.Wait(0.5)
-    self.Expect([1, 2, 3])
+    self.wait(0.5)
+    self.expect([1, 2, 3])
 
-  def testThrottlePlusConstantDelay(self):
-    self.Configure(bandwidth=4096, delay=2.0)
+  def test_throttle_plus_constant_delay(self):
+    self.configure(bandwidth=4096, delay=2.0)
 
-    self.Send(1, 2048)
-    self.Send(2, 2048)
+    self.send(1, 2048)
+    self.send(2, 2048)
     self.assertEqual(self.pipe.size, 4096)
 
-    self.Wait(1.0)
-    self.Expect([])
+    self.wait(1.0)
+    self.expect([])
     self.assertEqual(self.pipe.size, 0)
 
-    self.Wait(2.0)
-    self.Expect([1, 2])
+    self.wait(2.0)
+    self.expect([1, 2])
 
-  def testBufferFull(self):
-    self.Configure(bandwidth=1024, buffer=2048)
+  def test_buffer_full(self):
+    self.configure(bandwidth=1024, buffer=2048)
 
-    self.Send(1, 1024)
-    self.Send(2, 1024)
-    self.Send(3, 1024)
+    self.send(1, 1024)
+    self.send(2, 1024)
+    self.send(3, 1024)
     self.assertEqual(self.pipe.size, 2048)
 
-    self.Wait(1.0)
-    self.Expect([1])
+    self.wait(1.0)
+    self.expect([1])
     self.assertEqual(self.pipe.size, 1024)
-    self.Send(4, 1024)
+    self.send(4, 1024)
 
-    self.Wait(1.0)
-    self.Expect([1, 2])
+    self.wait(1.0)
+    self.expect([1, 2])
 
-    self.Wait(1.0)
-    self.Expect([1, 2, 4])
+    self.wait(1.0)
+    self.expect([1, 2, 4])
 
-  def testDropAll(self):
-    self.Configure(delay=1.0, loss=1.0)
+  def test_drop_all(self):
+    self.configure(delay=1.0, loss=1.0)
 
-    self.Send(1, 1024)
-    self.Wait(1.0)
-    self.Expect([])
+    self.send(1, 1024)
+    self.wait(1.0)
+    self.expect([])
     self.assertEqual(self.pipe.bytes_attempted, 1024)
     self.assertEqual(self.pipe.bytes_delivered, 0)
 
   def testMeteringAllDelivered(self):
-    self.Configure(delay=2.0)
+    self.configure(delay=2.0)
 
-    self.Send(1, 1024)
-    self.Wait(1.0)
+    self.send(1, 1024)
+    self.wait(1.0)
     self.assertEqual(self.pipe.bytes_attempted, 1024)
     self.assertEqual(self.pipe.bytes_delivered, 0)
 
-    self.Send(1, 1024)
+    self.send(1, 1024)
     self.assertEqual(self.pipe.bytes_attempted, 2048)
     self.assertEqual(self.pipe.bytes_delivered, 0)
 
-    self.Wait(1.0)
+    self.wait(1.0)
     self.assertEqual(self.pipe.bytes_attempted, 2048)
     self.assertEqual(self.pipe.bytes_delivered, 1024)
 
-    self.Wait(1.0)
+    self.wait(1.0)
     self.assertEqual(self.pipe.bytes_attempted, 2048)
     self.assertEqual(self.pipe.bytes_delivered, 2048)

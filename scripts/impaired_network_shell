@@ -16,4 +16,4 @@
 
 from packet_queue import interactive
 
-interactive.Main()
+interactive.main()

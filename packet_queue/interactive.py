@@ -58,22 +58,22 @@ class MeterProxy(object):
     reactor.callFromThread(self._atomic_reset)
 
   def _atomic_reset(self):
-    self.pipes.Up.ResetMeter()
-    self.pipes.Down.ResetMeter()
+    self.pipes.up.reset_meter()
+    self.pipes.down.reset_meter()
 
   def __repr__(self):
     return '\n'.join([
       'up:',
-      '  attempted: {}'.format(self.pipes.Up.bytes_attempted),
-      '  delivered: {}'.format(self.pipes.Up.bytes_delivered),
+      '  attempted: {}'.format(self.pipes.up.bytes_attempted),
+      '  delivered: {}'.format(self.pipes.up.bytes_delivered),
       'down:',
-      '  attempted: {}'.format(self.pipes.Down.bytes_attempted),
-      '  delivered: {}'.format(self.pipes.Down.bytes_delivered),
+      '  attempted: {}'.format(self.pipes.down.bytes_attempted),
+      '  delivered: {}'.format(self.pipes.down.bytes_delivered),
     ])
 
 
-def Main():
-  params, pipes, _ = command.Configure()
+def main():
+  params, pipes, _ = command.configure()
   shell = embed.InteractiveShellEmbed()
   shell.confirm_exit = False
 

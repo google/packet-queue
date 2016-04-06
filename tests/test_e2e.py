@@ -99,13 +99,13 @@ class EndToEndTest(unittest.TestCase):
 
   def run_nfqueue(self):
     pipes = simulation.PipePair(self.params)
-    nfqueue.Configure('udp', self.port, pipes, 'lo')
+    nfqueue.configure('udp', self.port, pipes, 'lo')
     reactor.callLater(0, self.set_ready)
     reactor.run()
 
   def run_proxy(self):
     pipes = simulation.PipePair(self.params)
-    proxy_port = udp_proxy.Configure(self.port, 0, pipes)
+    proxy_port = udp_proxy.configure(self.port, 0, pipes)
     self.shared.proxy_port = proxy_port
     reactor.callLater(0, self.set_ready)
     reactor.run()

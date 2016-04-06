@@ -35,9 +35,9 @@ class NFQueueReader(abstract.FileDescriptor):
     return self.queue.get_fd()
 
 
-def Configure(protocol, port, pipes, interface):
-  RemoveAll()
-  reactor.addSystemEventTrigger('after', 'shutdown', RemoveAll)
+def configure(protocol, port, pipes, interface):
+  remove_all()
+  reactor.addSystemEventTrigger('after', 'shutdown', remove_all)
 
   # gets default (outward-facing) network interface (e.g. deciding which of
   # eth0, eth1, wlan0 is being used by the system to connect to the internet)
@@ -47,7 +47,7 @@ def Configure(protocol, port, pipes, interface):
     if interface not in netifaces.interfaces():
       raise ValueError("Given interface does not exist.", interface)
 
-  Add(protocol, port, interface)
+  add(protocol, port, interface)
   queue = netfilterqueue.NetfilterQueue()
 
   def handle(packet):
@@ -56,14 +56,14 @@ def Configure(protocol, port, pipes, interface):
     # TODO: Support IPv6.
     dport = struct.unpack('!H', packet.get_payload()[22:24])[0]
     size = packet.get_payload_len()
-    handler = (pipes.Up if dport == port else pipes.Down)
-    handler(packet.accept, size)
+    pipe = (pipes.up if dport == port else pipes.down)
+    pipe.attempt(packet.accept, size)
 
   queue.bind(1, handle)
   reactor.addReader(NFQueueReader(queue))
 
 
-def Add(protocol, port, interface):
+def add(protocol, port, interface):
   """Adds iptables NFQUEUE rules: one each for INPUT and OUTPUT."""
   table = iptc.Table(iptc.Table.FILTER)
 
@@ -89,7 +89,7 @@ def Add(protocol, port, interface):
     chain.insert_rule(rule)
 
 
-def RemoveAll():
+def remove_all():
   """Removes all iptables INPUT/OUTPUT rules commented for deletion."""
   table = iptc.Table(iptc.Table.FILTER)
   for chain_name in ['INPUT', 'OUTPUT']:

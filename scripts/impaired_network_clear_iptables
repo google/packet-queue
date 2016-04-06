@@ -16,4 +16,4 @@
 
 from packet_queue import nfqueue
 
-nfqueue.RemoveAll()
+nfqueue.remove_all()
