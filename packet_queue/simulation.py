@@ -24,8 +24,8 @@ class PipePair(object):
 
 
 class Pipe(object):
-  """Callable that takes packets, represented by a callback and a size in bytes,
-  and possibly invokes the callback later.
+  """Takes packets, represented by a callback and a size in bytes, and possibly
+  invokes the callback later.
 
   Limits bandwidth by holding packets in a "buffer", and rejects packets when
   the buffer is full.
@@ -52,6 +52,11 @@ class Pipe(object):
     self.bytes_delivered = 0
 
   def attempt(self, callback, size):
+    """Possibly invoke a callback representing a packet.
+
+    The callback may be invoked later using the Twisted reactor, simulating
+    network latency, or it may be ignored entirely, simulating packet loss.
+    """
     self.bytes_attempted += size
     def deliver():
       self.bytes_delivered += size
