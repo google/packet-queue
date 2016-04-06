@@ -21,10 +21,15 @@ from twisted.internet import reactor
 OVERHEAD = 28
 
 
-def Configure(port, proxy_port, simulators):
-  """Starts a UDP proxy server on localhost."""
-  server = ProxyServer(port, simulators)
-  reactor.listenUDP(proxy_port, server.udp)
+def Configure(port, proxy_port, pipes):
+  """Starts a UDP proxy server on localhost.
+
+  Returns the proxy port number, which is the same as the proxy_port param
+  unless zero is passed in.
+  """
+  server = ProxyServer(port, pipes)
+  port = reactor.listenUDP(proxy_port, server.udp)
+  return port.getHost().port
 
 
 class UDP(protocol.DatagramProtocol):
