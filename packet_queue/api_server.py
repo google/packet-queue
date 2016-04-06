@@ -29,14 +29,14 @@ from . import command
 from . import simulation
 
 
-def CreateSite(params, pipes):
+def create_site(params, pipes):
   root = resource.Resource()
   root.putChild("pipes", PipeResource(params))
   root.putChild("bytes", MeterResource(pipes))
   return server.Site(root)
 
 
-def ParsePipeParams(args, types=None):
+def parse_pipe_params(args, types=None):
   """Ensure pipe parameter args are of correct type.
 
   Args:
@@ -95,7 +95,7 @@ class PipeResource(resource.Resource):
     content = request.content.read()  # request BODY
 
     try:
-      args = ParsePipeParams(json.loads(content), self.param_types)
+      args = parse_pipe_params(json.loads(content), self.param_types)
     except (ValueError, TypeError):
       request.setResponseCode(400)
       return json.dumps({"error": "Malformed parameter value", "request": content})
@@ -120,16 +120,16 @@ class MeterResource(resource.Resource):
 
   def render_GET(self, request):
     response = {
-        "up_bytes_attempted": self.pipes.Up.bytes_attempted,
-        "up_bytes_delivered": self.pipes.Up.bytes_delivered,
-        "down_bytes_attempted": self.pipes.Down.bytes_attempted,
-        "down_bytes_delivered": self.pipes.Down.bytes_delivered,
+        "up_bytes_attempted": self.pipes.up.bytes_attempted,
+        "up_bytes_delivered": self.pipes.up.bytes_delivered,
+        "down_bytes_attempted": self.pipes.down.bytes_attempted,
+        "down_bytes_delivered": self.pipes.down.bytes_delivered,
     }
 
     request.setHeader("Content-Type", "application/json")
     return json.dumps(response)
 
 
-def Configure():
-  params, pipes, args = command.Configure(rest_server=True)
-  reactor.listenTCP(args.rest_api_port, CreateSite(params, pipes))
+def configure():
+  params, pipes, args = command.configure(rest_server=True)
+  reactor.listenTCP(args.rest_api_port, create_site(params, pipes))

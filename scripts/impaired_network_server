@@ -17,5 +17,5 @@
 from twisted.internet import reactor
 from packet_queue import api_server
 
-api_server.Configure()
+api_server.configure()
 reactor.run()

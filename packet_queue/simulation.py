@@ -19,8 +19,8 @@ from twisted.internet import reactor
 class PipePair(object):
   """Holds two Pipe instances sharing a parameter dictionary."""
   def __init__(self, params):
-    self.Up = Pipe(params)
-    self.Down = Pipe(params)
+    self.up = Pipe(params)
+    self.down = Pipe(params)
 
 
 class Pipe(object):
@@ -44,16 +44,16 @@ class Pipe(object):
   def __init__(self, params):
     self.params = params
     self.size = 0
-    self.ResetMeter()
+    self.reset_meter()
 
-  def ResetMeter(self):
+  def reset_meter(self):
     # If packets are dropped, they are counted as attempted but not delivered.
     self.bytes_attempted = 0
     self.bytes_delivered = 0
 
-  def __call__(self, callback, size):
+  def attempt(self, callback, size):
     self.bytes_attempted += size
-    def deliver_packet():
+    def deliver():
       self.bytes_delivered += size
       callback()
 
@@ -81,4 +81,4 @@ class Pipe(object):
     constant_delay = self.params['delay']
 
     reactor.callLater(throttle_delay, release_buffer)
-    reactor.callLater(throttle_delay + constant_delay, deliver_packet)
+    reactor.callLater(throttle_delay + constant_delay, deliver)

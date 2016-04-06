@@ -19,7 +19,7 @@ from . import simulation
 from . import udp_proxy
 
 
-def Configure(rest_server=False):
+def configure(rest_server=False):
   """Core startup routine.
 
   Args:
@@ -59,7 +59,7 @@ def Configure(rest_server=False):
 
   if args.level == 'kernel':
     import nfqueue # Makes imports that only work on Linux.
-    nfqueue.Configure(args.transport, args.port, pipes, args.interface)
+    nfqueue.configure(args.transport, args.port, pipes, args.interface)
   else:
     if args.transport == 'tcp':
       print 'Can\'t proxy TCP packets at the user level :('
@@ -67,6 +67,6 @@ def Configure(rest_server=False):
     if not args.proxy_port:
       print '--proxy_port is required'
       sys.exit(1)
-    udp_proxy.Configure(args.port, args.proxy_port, pipes)
+    udp_proxy.configure(args.port, args.proxy_port, pipes)
 
   return params, pipes, args

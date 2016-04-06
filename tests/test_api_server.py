@@ -25,7 +25,7 @@ from packet_queue import api_server
 from packet_queue import simulation
 
 
-def ConstructDummyRequest(method="GET", data=""):
+def construct_dummy_request(method="GET", data=""):
   request = test_web.DummyRequest([""])
 
   request.content = StringIO.StringIO(data)
@@ -48,34 +48,35 @@ class DummyReactor(object):
 
 
 class PipeParamsTest(unittest.TestCase):
-  def testNullCase(self):
-    self.assertEqual(api_server.ParsePipeParams({}), {})
 
-  def testInvalidKey(self):
-    self.assertEqual(api_server.ParsePipeParams({"foo": 0}), {})
+  def test_null_case(self):
+    self.assertEqual(api_server.parse_pipe_params({}), {})
 
-  def testInvalidCast(self):
-    self.assertRaises(ValueError, api_server.ParsePipeParams, {"bandwidth": "foobar"})
-    self.assertRaises(ValueError, api_server.ParsePipeParams, {"bandwidth": "1.5"})
-    self.assertRaises(TypeError, api_server.ParsePipeParams, {"bandwidth": {}})
-    self.assertRaises(TypeError, api_server.ParsePipeParams, {"bandwidth": ()})
-    self.assertRaises(TypeError, api_server.ParsePipeParams, {"bandwidth": None})
+  def test_invalid_key(self):
+    self.assertEqual(api_server.parse_pipe_params({"foo": 0}), {})
 
-  def testNormalCase(self):
+  def test_invalid_cast(self):
+    self.assertRaises(ValueError, api_server.parse_pipe_params, {"bandwidth": "foobar"})
+    self.assertRaises(ValueError, api_server.parse_pipe_params, {"bandwidth": "1.5"})
+    self.assertRaises(TypeError, api_server.parse_pipe_params, {"bandwidth": {}})
+    self.assertRaises(TypeError, api_server.parse_pipe_params, {"bandwidth": ()})
+    self.assertRaises(TypeError, api_server.parse_pipe_params, {"bandwidth": None})
+
+  def test_normal_case(self):
     expected = {"bandwidth": -1}
-    actual = api_server.ParsePipeParams({"bandwidth": "-1"})
+    actual = api_server.parse_pipe_params({"bandwidth": "-1"})
     self.assertEqual(actual, expected)
 
     expected = {"loss": 0.5}
-    actual = api_server.ParsePipeParams({"loss": ".5"})
+    actual = api_server.parse_pipe_params({"loss": ".5"})
     self.assertEqual(actual, expected)
 
-  def testNonDefaultTypes(self):
+  def test_non_default_types(self):
     types = {"some_int": int, "some_float": float}
-    actual = api_server.ParsePipeParams({"some_int": "1"}, types)
+    actual = api_server.parse_pipe_params({"some_int": "1"}, types)
     self.assertEqual(actual, {"some_int": 1})
 
-    actual = api_server.ParsePipeParams({"some_float": "1.0"}, types)
+    actual = api_server.parse_pipe_params({"some_float": "1.0"}, types)
     self.assertEqual(actual, {"some_float": 1.0})
 
 
@@ -89,30 +90,30 @@ class PipeResourceTest(unittest.TestCase):
 
     self.resource = api_server.PipeResource(params=self.params)
 
-  def testGetInitState(self):
-    request = ConstructDummyRequest()
+  def test_get_init_state(self):
+    request = construct_dummy_request()
     content = self.resource.render(request)
     self.assertEqual(json.loads(content), self.BASE_PARAMS)
 
-  def testPutNoContent(self):
-    request = ConstructDummyRequest(method="PUT", data="")
+  def test_put_no_content(self):
+    request = construct_dummy_request(method="PUT", data="")
     self.resource.render(request)
     self.assertEqual(request.responseCode, 400)
 
-  def testPutEmptyParams(self):
-    request = ConstructDummyRequest(method="PUT", data="{}")
+  def test_put_empty_params(self):
+    request = construct_dummy_request(method="PUT", data="{}")
     content = self.resource.render(request)
     self.assertEqual(json.loads(content), self.BASE_PARAMS)
 
-  def testPutInvalidRequest(self):
+  def test_put_invalid_request(self):
     """Invalid param types should be caught by handler and indicated in response.
 
     We are not testing the full suite of possible bad params possible --
-    this should be already tested in simulation.ParsePipeParams unit tests.
+    this should be already tested in simulation.parse_pipe_params unit tests.
     """
 
     new = {"foo": "blaaaaaah"}
-    request = ConstructDummyRequest(method="PUT", data=json.dumps(new))
+    request = construct_dummy_request(method="PUT", data=json.dumps(new))
     content = self.resource.render(request)
 
     self.assertEqual(request.responseCode, 400)
@@ -120,13 +121,13 @@ class PipeResourceTest(unittest.TestCase):
     self.assertTrue("request" in data)
     self.assertEqual(json.loads(data["request"]), new)
 
-  def testPutValidRequest(self):
+  def test_put_valid_request(self):
     """Assert PUT requests actually change the simulation parameters."""
 
     new = {"foo": 128}
     expected = {"foo": 128, "bar": 107}
 
-    request = ConstructDummyRequest(method="PUT", data=json.dumps(new))
+    request = construct_dummy_request(method="PUT", data=json.dumps(new))
     content = self.resource.render(request)
 
     # return proper state
@@ -135,13 +136,13 @@ class PipeResourceTest(unittest.TestCase):
     # correctly set params
     self.assertEqual(self.params, expected)
 
-  def testDeleteRequest(self):
+  def test_delete_request(self):
     new = {"foo": 128}
 
     self.resource.render(
-        ConstructDummyRequest(method="PUT", data=json.dumps(new)))
+        construct_dummy_request(method="PUT", data=json.dumps(new)))
 
-    request = ConstructDummyRequest(method="DELETE")
+    request = construct_dummy_request(method="DELETE")
     content = self.resource.render(request)
 
     self.assertEqual(json.loads(content), self.BASE_PARAMS)
@@ -155,10 +156,10 @@ class MeterResourceTest(unittest.TestCase):
     self.reactor = DummyReactor()
     simulation.reactor = self.reactor
 
-  def testGet(self):
-    self.pipes.Up(lambda: None, 1024)
+  def test_get(self):
+    self.pipes.up.attempt(lambda: None, 1024)
     self.reactor.execute = False
-    self.pipes.Down(lambda: None, 2048)
+    self.pipes.down.attempt(lambda: None, 2048)
 
     expected = {
         "up_bytes_attempted": 1024,
@@ -167,6 +168,6 @@ class MeterResourceTest(unittest.TestCase):
         "down_bytes_delivered": 0,
     }
 
-    request = ConstructDummyRequest(method="GET")
+    request = construct_dummy_request(method="GET")
     content = self.resource.render(request)
     self.assertEqual(json.loads(content), expected)
