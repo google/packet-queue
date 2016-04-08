@@ -15,7 +15,7 @@ abstracting the concept of a packet from IP and UDP.
 ```
 apt-get install libnetfilter-queue-dev
 python setup.py build sdist
-pip install dist/packet_queue-0.1.0.tar.gz --process-dependency-links
+pip install dist/packet_queue-0.1.0.tar.gz
 ```
 
 Set MTU on the loopback device to something small. This is also required
