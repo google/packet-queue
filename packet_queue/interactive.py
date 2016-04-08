@@ -14,13 +14,14 @@
 
 """Interactive shell for network simulation."""
 
-from IPython.terminal import embed
+import code
 from twisted.internet import reactor
 from twisted.internet import threads
 from . import command
 
 
 BANNER = '\n'.join([
+  '',
   'Network simulation!',
   '',
   'You have an object, p, that you can use to change parameters on the fly.',
@@ -31,6 +32,7 @@ BANNER = '\n'.join([
   '  m',
   'Reset the numbers to zero with the reset() method:',
   '  m.reset()',
+  '',
 ])
 
 
@@ -74,15 +76,13 @@ class MeterProxy(object):
 
 def main():
   params, pipes, _ = command.configure()
-  shell = embed.InteractiveShellEmbed()
-  shell.confirm_exit = False
 
   def run_shell():
     shell_vars = {
         'p': ParamsProxy(params),
         'm': MeterProxy(pipes),
     }
-    shell.mainloop(shell_vars, display_banner=BANNER)
+    code.interact(banner=BANNER, local=shell_vars)
 
   deferred = threads.deferToThread(run_shell)
   deferred.addCallback(lambda result: reactor.stop())
