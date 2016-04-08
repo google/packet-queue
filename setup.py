@@ -25,11 +25,8 @@ setup(
     description='Packet-based impaired network library',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
-    dependency_links=[
-        'https://github.com/brian-goldman/python-netfilterqueue/tarball/master#egg=netfilterqueue-1000',
-    ],
     install_requires=[
-        'twisted', 'ipython', 'python-iptables', 'netifaces', 'netfilterqueue==1000',
+        'twisted', 'ipython', 'python-iptables', 'netifaces',
     ],
     scripts=[
         'scripts/impaired_network_server',
