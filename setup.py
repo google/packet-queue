@@ -26,7 +26,7 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
     install_requires=[
-        'twisted', 'ipython', 'python-iptables', 'netifaces',
+        'twisted', 'python-iptables', 'netifaces',
     ],
     scripts=[
         'scripts/impaired_network_server',
