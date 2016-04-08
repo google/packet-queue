@@ -15,24 +15,28 @@
 """Network simulation adapter using NFQUEUE on Linux."""
 import os
 import netifaces
-import struct
 import iptc
-import netfilterqueue
 from twisted.internet import abstract
 from twisted.internet import reactor
 
+from packet_queue import libnetfilter_queue
+
+
+UP_QUEUE = 1
+DOWN_QUEUE = 2
+
 
 class NFQueueReader(abstract.FileDescriptor):
-  """Twisted Reader that wraps netfilterqueue.NetfilterQueue."""
-  def __init__(self, queue):
-    self.queue = queue
+  """Twisted Reader that wraps libnetfilter_queue.Manager."""
+  def __init__(self, manager):
+    self.manager = manager
     super(NFQueueReader, self).__init__()
 
   def doRead(self):
-    self.queue.run(block=False)
+    self.manager.process()
 
   def fileno(self):
-    return self.queue.get_fd()
+    return self.manager.fileno
 
 
 def configure(protocol, port, pipes, interface):
@@ -48,19 +52,21 @@ def configure(protocol, port, pipes, interface):
       raise ValueError("Given interface does not exist.", interface)
 
   add(protocol, port, interface)
-  queue = netfilterqueue.NetfilterQueue()
+  manager = libnetfilter_queue.Manager()
 
-  def handle(packet):
-    # python-netfilterqueue doesn't seem to handle multiple queues correctly,
-    # so filter packets based on destination port as they come in.
-    # TODO: Support IPv6.
-    dport = struct.unpack('!H', packet.get_payload()[22:24])[0]
-    size = packet.get_payload_len()
-    pipe = (pipes.up if dport == port else pipes.down)
-    pipe.attempt(packet.accept, size)
+  def on_up(packet):
+    def accept():
+      manager.set_verdict(packet, libnetfilter_queue.NF_ACCEPT)
+    pipes.up.attempt(accept, packet.size)
 
-  queue.bind(1, handle)
-  reactor.addReader(NFQueueReader(queue))
+  def on_down(packet):
+    def accept():
+      manager.set_verdict(packet, libnetfilter_queue.NF_ACCEPT)
+    pipes.down.attempt(accept, packet.size)
+
+  manager.bind(UP_QUEUE, on_up)
+  manager.bind(DOWN_QUEUE, on_down)
+  reactor.addReader(NFQueueReader(manager))
 
 
 def add(protocol, port, interface):
@@ -68,11 +74,11 @@ def add(protocol, port, interface):
   table = iptc.Table(iptc.Table.FILTER)
 
   params =  [
-    ('INPUT', 'in_interface', 'dport'),
-    ('OUTPUT', 'out_interface', 'sport'),
+    ('INPUT', 'in_interface', 'dport', UP_QUEUE),
+    ('OUTPUT', 'out_interface', 'sport', DOWN_QUEUE),
   ]
 
-  for chain_name, interface_attr, port_attr in params:
+  for chain_name, interface_attr, port_attr, queue_num in params:
     chain = iptc.Chain(table, chain_name)
     rule = iptc.Rule()
     setattr(rule, interface_attr, interface)
@@ -85,7 +91,7 @@ def add(protocol, port, interface):
     setattr(protocol_match, port_attr, str(port))
 
     rule.target = rule.create_target('NFQUEUE')
-    rule.target.set_parameter('queue-num', '1')
+    rule.target.set_parameter('queue-num', str(queue_num))
     chain.insert_rule(rule)
 
 
@@ -99,4 +105,3 @@ def remove_all():
         if match.comment and match.comment.startswith('white rabbit'):
           chain.delete_rule(rule)
           break
-
