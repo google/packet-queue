@@ -21,6 +21,7 @@ from os import path
 setup(
     name='packet_queue',
     version='0.1.0',
+    zip_safe=False,  # https://github.com/ldx/python-iptables/issues/76
 
     description='Packet-based impaired network library',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
