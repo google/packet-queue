@@ -13,7 +13,8 @@ abstracting the concept of a packet from IP and UDP.
 ## Installation
 
 ```
-python setup.py install
+python setup.py build sdist
+pip install dist/packet_queue-0.1.0.tar.gz
 ```
 
 Set MTU on the loopback device to something small. This is also required
