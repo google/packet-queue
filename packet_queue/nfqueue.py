@@ -26,19 +26,6 @@ UP_QUEUE = 1
 DOWN_QUEUE = 2
 
 
-class NFQueueReader(abstract.FileDescriptor):
-  """Twisted Reader that wraps libnetfilter_queue.Manager."""
-  def __init__(self, manager):
-    self.manager = manager
-    super(NFQueueReader, self).__init__()
-
-  def doRead(self):
-    self.manager.process()
-
-  def fileno(self):
-    return self.manager.fileno
-
-
 def configure(protocol, port, pipes, interface):
   remove_all()
   reactor.addSystemEventTrigger('after', 'shutdown', remove_all)
@@ -66,7 +53,11 @@ def configure(protocol, port, pipes, interface):
 
   manager.bind(UP_QUEUE, on_up)
   manager.bind(DOWN_QUEUE, on_down)
-  reactor.addReader(NFQueueReader(manager))
+
+  reader = abstract.FileDescriptor()
+  reader.doRead = manager.process
+  reader.fileno = lambda: manager.fileno
+  reactor.addReader(reader)
 
 
 def add(protocol, port, interface):
