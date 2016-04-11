@@ -21,6 +21,7 @@ from os import path
 setup(
     name='packet_queue',
     version='0.1.0',
+    zip_safe=False,  # python-iptables doesn't work well with eggs
 
     description='Packet-based impaired network library',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
