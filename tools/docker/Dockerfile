@@ -24,7 +24,6 @@ RUN apt-get -y install python iptables git
 RUN apt-get -y install python-setuptools python-dev build-essential python-pip
 
 RUN apt-get -y install libnetfilter-queue-dev
-RUN pip install cherrypy
 
 RUN mkdir /src
 WORKDIR /src
