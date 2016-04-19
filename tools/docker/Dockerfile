@@ -36,3 +36,8 @@ RUN pip install .
 
 WORKDIR /src
 RUN rm -rf /src/packet-queue
+
+# allow users in the group whiterabbit to invoke "impaired_network_queue"
+# with sudo without password prompt
+RUN groupadd whiterabbit
+RUN echo "%whiterabbit  ALL=(root) NOPASSWD: "`which impaired_network_server` >> /etc/sudoers.d/whiterabbit
