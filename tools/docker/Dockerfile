@@ -36,3 +36,6 @@ RUN pip install .
 
 WORKDIR /src
 RUN rm -rf /src/packet-queue
+
+RUN groupadd whiterabbit
+RUN echo "%whiterabbit ALL=(root) NOPASSWD: "`which impaired_network_server` >> /etc/sudoers.d/whiterabbit
