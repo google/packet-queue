@@ -13,14 +13,16 @@
 # limitations under the License.
 
 import random
+import time
 from twisted.internet import reactor
 
 
 class PipePair(object):
-  """Holds two Pipe instances sharing a parameter dictionary."""
-  def __init__(self, params):
-    self.up = Pipe(params)
-    self.down = Pipe(params)
+  """Holds two Pipe instances sharing a parameter dictionary and event log."""
+  def __init__(self, params, event_log):
+    self.event_log = event_log
+    self.up = Pipe('up', params, event_log)
+    self.down = Pipe('down', params, event_log)
 
 
 class Pipe(object):
@@ -41,36 +43,44 @@ class Pipe(object):
       'loss': 0.0,
   }
 
-  def __init__(self, params):
+  def __init__(self, name, params, event_log):
+    self.name = name
     self.params = params
+    self.events = event_log
     self.size = 0
-    self.reset_meter()
 
-  def reset_meter(self):
-    # If packets are dropped, they are counted as attempted but not delivered.
-    self.bytes_attempted = 0
-    self.bytes_delivered = 0
-
-  def attempt(self, callback, size):
+  def attempt(self, deliver_callback, drop_callback, size):
     """Possibly invoke a callback representing a packet.
 
     The callback may be invoked later using the Twisted reactor, simulating
     network latency, or it may be ignored entirely, simulating packet loss.
     """
-    self.bytes_attempted += size
+    attempt_time = time.time()
+
     def deliver():
-      self.bytes_delivered += size
-      callback()
+      delivery_time = time.time()
+      latency = delivery_time - attempt_time
+      self.events.add(delivery_time, self.name, 'deliver', size)
+      self.events.add(delivery_time, self.name, 'latency', latency)
+      deliver_callback()
 
     if self.params['buffer'] > 0 and self.size + size > self.params['buffer']:
+      self.events.add(attempt_time, self.name, 'drop', size)
+      drop_callback()
       return
 
     if random.random() < self.params['loss']:
+      self.events.add(attempt_time, self.name, 'drop', size)
+      drop_callback()
       return
 
     self.size += size
+    self.events.add(attempt_time, self.name, 'buffer', self.size)
+
     def release_buffer():
+      release_time = time.time()
       self.size -= size
+      self.events.add(release_time, self.name, 'buffer', self.size)
 
     # Delay has two components: throttled (proportional to size) and constant.
     #

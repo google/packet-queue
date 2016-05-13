@@ -19,9 +19,13 @@ Creates and maintains the pipes params, updating params on the fly.
 
 import argparse
 import json
+import os
+import sys
+import time
 
 from twisted.internet import reactor
 from twisted.web import resource
+from twisted.web import static
 from twisted.web import server
 from twisted.web import util
 
@@ -30,9 +34,12 @@ from . import simulation
 
 
 def create_site(params, pipes):
-  root = resource.Resource()
-  root.putChild("pipes", PipeResource(params))
-  root.putChild("bytes", MeterResource(pipes))
+  source_dir = os.path.dirname(os.path.abspath(__file__))
+  web_dir = os.path.join(source_dir, 'web')
+
+  root = static.File(web_dir)
+  root.putChild('pipes', PipeResource(params))
+  root.putChild('events', EventsResource(pipes.event_log))
   return server.Site(root)
 
 
@@ -74,11 +81,11 @@ class PipeResource(resource.Resource):
 
     self.params.update(self.default)
 
-    request.setHeader("Content-Type", "application/json")
+    request.setHeader('Content-Type', 'application/json')
     return json.dumps(self.params)
 
   def render_GET(self, request):
-    request.setHeader("Content-Type", "application/json")
+    request.setHeader('Content-Type', 'application/json')
     return json.dumps(self.params)
 
   def render_PUT(self, request):
@@ -91,45 +98,41 @@ class PipeResource(resource.Resource):
     Returns:
       JSON string representing the page contents
     """
-
-    content = request.content.read()  # request BODY
+    content = request.content.read()
+    request.setHeader('Content-Type', 'application/json')
 
     try:
-      args = parse_pipe_params(json.loads(content), self.param_types)
-    except (ValueError, TypeError):
+      params = parse_pipe_params(json.loads(content), self.param_types)
+    except (KeyError, ValueError):
       request.setResponseCode(400)
-      return json.dumps({"error": "Malformed parameter value", "request": content})
+      response = {'error': 'Unable to parse parameters'}
+      return json.dumps(response)
+    else:
+      self.params.update(params)
+      return json.dumps(self.params)
 
-    self.params.update(args)
 
-    request.setHeader("Content-Type", "application/json")
-    return json.dumps(self.params)
-
-
-class MeterResource(resource.Resource):
-  """Provides the number of bytes attempted and delivered."""
+class EventsResource(resource.Resource):
+  """Provides a view of recent network simulation events."""
 
   is_leaf = True
 
-  def __init__(self, pipes):
-    """Args:
-      pipes: simulation.Pipe instance
-    """
-    self.pipes = pipes
+  def __init__(self, event_log):
+    self.event_log = event_log
     resource.Resource.__init__(self)
 
   def render_GET(self, request):
-    response = {
-        "up_bytes_attempted": self.pipes.up.bytes_attempted,
-        "up_bytes_delivered": self.pipes.up.bytes_delivered,
-        "down_bytes_attempted": self.pipes.down.bytes_attempted,
-        "down_bytes_delivered": self.pipes.down.bytes_delivered,
-    }
-
-    request.setHeader("Content-Type", "application/json")
+    events = self.event_log.get_pending()
+    response = {'now': time.time(), 'events': events}
     return json.dumps(response)
 
 
 def configure():
   params, pipes, args = command.configure(rest_server=True)
-  reactor.listenTCP(args.rest_api_port, create_site(params, pipes))
+  port = args.rest_api_port
+
+  reactor.listenTCP(port, create_site(params, pipes))
+  @reactor.callWhenRunning
+  def startup_message():
+    print 'Packet Queue is running. Configure at http://localhost:%i' % port
+    sys.stdout.flush()

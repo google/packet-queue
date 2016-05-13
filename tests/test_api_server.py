@@ -118,8 +118,7 @@ class PipeResourceTest(unittest.TestCase):
 
     self.assertEqual(request.responseCode, 400)
     data = json.loads(content)
-    self.assertTrue("request" in data)
-    self.assertEqual(json.loads(data["request"]), new)
+    self.assertTrue("error" in data, data)
 
   def test_put_valid_request(self):
     """Assert PUT requests actually change the simulation parameters."""
@@ -146,28 +145,3 @@ class PipeResourceTest(unittest.TestCase):
     content = self.resource.render(request)
 
     self.assertEqual(json.loads(content), self.BASE_PARAMS)
-
-
-class MeterResourceTest(unittest.TestCase):
-  def setUp(self):
-    self.pipes = simulation.PipePair(simulation.Pipe.PARAMS)
-    self.resource = api_server.MeterResource(self.pipes)
-
-    self.reactor = DummyReactor()
-    simulation.reactor = self.reactor
-
-  def test_get(self):
-    self.pipes.up.attempt(lambda: None, 1024)
-    self.reactor.execute = False
-    self.pipes.down.attempt(lambda: None, 2048)
-
-    expected = {
-        "up_bytes_attempted": 1024,
-        "up_bytes_delivered": 1024,
-        "down_bytes_attempted": 2048,
-        "down_bytes_delivered": 0,
-    }
-
-    request = construct_dummy_request(method="GET")
-    content = self.resource.render(request)
-    self.assertEqual(json.loads(content), expected)

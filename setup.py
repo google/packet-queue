@@ -25,6 +25,8 @@ setup(
 
     description='Packet-based impaired network library',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
+    package_data={'packet_queue': ['web/*']},
+    include_package_data=True,
 
     install_requires=[
         'twisted', 'python-iptables', 'netifaces',

@@ -26,6 +26,16 @@ UP_QUEUE = 1
 DOWN_QUEUE = 2
 
 
+def packet_handler(manager, pipe):
+  def on_packet(packet):
+    def accept():
+      manager.set_verdict(packet, libnetfilter_queue.NF_ACCEPT)
+    def drop():
+      manager.set_verdict(packet, libnetfilter_queue.NF_DROP)
+    pipe.attempt(accept, drop, packet.size)
+  return on_packet
+
+
 def configure(protocol, port, pipes, interface):
   remove_all()
   reactor.addSystemEventTrigger('after', 'shutdown', remove_all)
@@ -41,18 +51,8 @@ def configure(protocol, port, pipes, interface):
   add(protocol, port, interface)
   manager = libnetfilter_queue.Manager()
 
-  def on_up(packet):
-    def accept():
-      manager.set_verdict(packet, libnetfilter_queue.NF_ACCEPT)
-    pipes.up.attempt(accept, packet.size)
-
-  def on_down(packet):
-    def accept():
-      manager.set_verdict(packet, libnetfilter_queue.NF_ACCEPT)
-    pipes.down.attempt(accept, packet.size)
-
-  manager.bind(UP_QUEUE, on_up)
-  manager.bind(DOWN_QUEUE, on_down)
+  manager.bind(UP_QUEUE, packet_handler(manager, pipes.up))
+  manager.bind(DOWN_QUEUE, packet_handler(manager, pipes.down))
 
   reader = abstract.FileDescriptor()
   reader.doRead = manager.process

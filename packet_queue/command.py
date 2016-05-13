@@ -15,6 +15,7 @@
 import argparse
 import netifaces
 import sys
+from . import monitoring
 from . import simulation
 from . import udp_proxy
 
@@ -49,11 +50,12 @@ def configure(rest_server=False):
 
   if rest_server:
     parser.add_argument(
-        '-a', '--rest_api_port', type=int,
+        '-a', '--rest_api_port', type=int, default=9000,
         help='port which REST API server will listen on')
 
   params = simulation.Pipe.PARAMS
-  pipes = simulation.PipePair(params)
+  event_log = monitoring.EventLog()
+  pipes = simulation.PipePair(params, event_log)
 
   args = parser.parse_args()
 

@@ -14,6 +14,7 @@
 
 import bisect
 import unittest
+from packet_queue import monitoring
 from packet_queue import simulation
 
 
@@ -69,7 +70,8 @@ class FakeReactorTest(unittest.TestCase):
 
 class PipeTest(unittest.TestCase):
   def setUp(self):
-    self.pipe = simulation.Pipe(dict(simulation.Pipe.PARAMS))
+    params = dict(simulation.Pipe.PARAMS)
+    self.pipe = simulation.Pipe('test', params, monitoring.EventLog())
     self.received = []
     self.reactor = FakeReactor()
     simulation.reactor = self.reactor
@@ -80,7 +82,7 @@ class PipeTest(unittest.TestCase):
   def send(self, obj, size=0):
     def callback():
       self.received.append(obj)
-    self.pipe.attempt(callback, size)
+    self.pipe.attempt(callback, lambda: None, size)
 
   def wait(self, seconds):
     self.reactor.advance_time(seconds)
@@ -155,25 +157,3 @@ class PipeTest(unittest.TestCase):
     self.send(1, 1024)
     self.wait(1.0)
     self.expect([])
-    self.assertEqual(self.pipe.bytes_attempted, 1024)
-    self.assertEqual(self.pipe.bytes_delivered, 0)
-
-  def testMeteringAllDelivered(self):
-    self.configure(delay=2.0)
-
-    self.send(1, 1024)
-    self.wait(1.0)
-    self.assertEqual(self.pipe.bytes_attempted, 1024)
-    self.assertEqual(self.pipe.bytes_delivered, 0)
-
-    self.send(1, 1024)
-    self.assertEqual(self.pipe.bytes_attempted, 2048)
-    self.assertEqual(self.pipe.bytes_delivered, 0)
-
-    self.wait(1.0)
-    self.assertEqual(self.pipe.bytes_attempted, 2048)
-    self.assertEqual(self.pipe.bytes_delivered, 1024)
-
-    self.wait(1.0)
-    self.assertEqual(self.pipe.bytes_attempted, 2048)
-    self.assertEqual(self.pipe.bytes_delivered, 2048)

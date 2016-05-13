@@ -21,6 +21,10 @@ from twisted.internet import reactor
 OVERHEAD = 28
 
 
+# Unlike nfqueue, no special action is needed to drop a packet.
+DROP = lambda: None
+
+
 def configure(port, proxy_port, pipes):
   """Starts a UDP proxy server on localhost.
 
@@ -71,7 +75,7 @@ class ProxyServer(object):
     proxy_client = self._GetProxyClient(address)
     def callback():
       proxy_client.udp.Send(data, self.server_address)
-    self.pipes.up.attempt(callback, len(data) + OVERHEAD)
+    self.pipes.up.attempt(callback, DROP, len(data) + OVERHEAD)
 
   def _GetProxyClient(self, address):
     """Gets a proxy client for a given client address.
@@ -103,4 +107,4 @@ class ProxyClient(object):
     """
     def callback():
       self.proxy_server.udp.Send(data, self.relay_address)
-    self.proxy_server.pipes.down.attempt(callback, len(data) + OVERHEAD)
+    self.proxy_server.pipes.down.attempt(callback, DROP, len(data) + OVERHEAD)

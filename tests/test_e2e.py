@@ -19,6 +19,7 @@ import select
 import socket
 import unittest
 
+from packet_queue import monitoring
 from packet_queue import nfqueue
 from packet_queue import simulation
 from packet_queue import udp_proxy
@@ -98,13 +99,13 @@ class EndToEndTest(unittest.TestCase):
     self.ready.wait(1.0)
 
   def run_nfqueue(self):
-    pipes = simulation.PipePair(self.params)
+    pipes = simulation.PipePair(self.params, monitoring.EventLog())
     nfqueue.configure('udp', self.port, pipes, 'lo')
     reactor.callLater(0, self.set_ready)
     reactor.run()
 
   def run_proxy(self):
-    pipes = simulation.PipePair(self.params)
+    pipes = simulation.PipePair(self.params, monitoring.EventLog())
     proxy_port = udp_proxy.configure(self.port, 0, pipes)
     self.shared.proxy_port = proxy_port
     reactor.callLater(0, self.set_ready)
