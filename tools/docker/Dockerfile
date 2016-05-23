@@ -17,7 +17,7 @@
 # docker run --cap-add=NET_ADMIN -t <LABEL> -p <APP_PORT>,<API_PORT> \
 # impaired_network_server -t tcp -l kernel -i auto -p <APP_PORT> -a <API_PORT>
 
-FROM ubuntu:latest
+FROM ubuntu:14.04
 
 RUN apt-get -y update
 RUN apt-get -y install python iptables git
