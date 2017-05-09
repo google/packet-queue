@@ -32,7 +32,7 @@ def verify_packet_drop_range(arg):
   """
   try:
     arg = float(arg)
-  except TypeError():
+  except ValueError():
     raise argparse.ArgumentTypeError('expected packet loss must be a float')
   if arg < 0 or arg > 1.0:
     raise argparse.ArgumentTypeError('expected packet loss range is 0.0-1.0')
@@ -70,8 +70,8 @@ def configure(rest_server=False):
       '-b', '--bandwidth', type=int, default=-1,
       help='The bandwidth in bytes per second')
   parser.add_argument(
-      '-d', '--delay', type=int, default=0,
-      help='The one way delay in seconds')
+      '-d', '--delay', type=float, default=0,
+      help='The one-way delay in seconds')
   parser.add_argument(
       '-B', '--buffer', type=int, default=-1,
       help='The size of the buffer in bytes')
