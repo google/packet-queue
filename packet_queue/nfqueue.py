@@ -36,7 +36,7 @@ def packet_handler(manager, pipe):
   return on_packet
 
 
-def configure(protocol, ports, pipes, interface, direction, use_ipv4, use_ipv6):
+def configure(protocol, ports, pipes, interface, role, use_ipv4, use_ipv6):
   remove_all()
   reactor.addSystemEventTrigger('after', 'shutdown', remove_all)
 
@@ -49,7 +49,7 @@ def configure(protocol, ports, pipes, interface, direction, use_ipv4, use_ipv6):
       raise ValueError('Given interface does not exist.', interface)
 
   for port in ports:
-    add(protocol, port, interface, direction, use_ipv4, use_ipv6)
+    add(protocol, port, interface, role, use_ipv4, use_ipv6)
 
   manager = libnetfilter_queue.Manager()
   manager.bind(UP_QUEUE, packet_handler(manager, pipes.up))
@@ -61,21 +61,21 @@ def configure(protocol, ports, pipes, interface, direction, use_ipv4, use_ipv6):
   reactor.addReader(reader)
 
 
-def add(protocol, port, interface, direction, use_ipv4, use_ipv6):
+def add(protocol, port, interface, role, use_ipv4, use_ipv6):
   """Adds iptables NFQUEUE rules: one each for INPUT/OUTPUT/IPv4/IPv6."""
   # Add IPv4 handlers
   if use_ipv4:
-    _add(protocol, port, interface, direction, iptc.Table, iptc.Rule)
+    _add(protocol, port, interface, role, iptc.Table, iptc.Rule)
   # Add IPv6 handlers
   if use_ipv6:
-    _add(protocol, port, interface, direction, iptc.Table6, iptc.Rule6)
+    _add(protocol, port, interface, role, iptc.Table6, iptc.Rule6)
 
 
-def _add(protocol, port, interface, direction, table_cls, rule_cls):
+def _add(protocol, port, interface, role, table_cls, rule_cls):
   """Adds iptables NFQUEUE rules: one each for INPUT and OUTPUT."""
   table = table_cls(iptc.Table.FILTER)
 
-  if direction == 'inbound':
+  if role == 'server':
     ports = ('dport', 'sport')
   else:
     ports = ('sport', 'dport')
