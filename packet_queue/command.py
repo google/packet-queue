@@ -22,7 +22,7 @@ from . import udp_proxy
 
 def verify_packet_drop_range(arg):
   """Verifies the packet drop argument range is 0-1.
-
+  
   Args:
     arg: The command line arg as a string
   Returns:
@@ -41,7 +41,7 @@ def verify_packet_drop_range(arg):
 
 def configure(rest_server=False):
   """Core startup routine.
-
+  
   Args:
     rest_server: boolean specifying if the API server will be initialized
   Returns:
@@ -79,12 +79,13 @@ def configure(rest_server=False):
       '-L', '--loss', type=verify_packet_drop_range, default=0.0,
       help='The packet drop ratio. must be in range 0.0-1.0')
   parser.add_argument(
-      '-D', '--direction', default='inbound',
-      choices=['inbound', 'outbound'],
-      help='The direction of the connection to throttle. This pertains to the '
-      'direction of the original connection request. Inbound means the '
-      'connection must be remote->local. Outbound means the connection must be '
-      'local->remote')
+      '-r', '--role', default='client',
+      choices=['client', 'server'],
+      help=('The "I am a ..." flag. In the client role the ports specified are '
+            'applied as the destination ports for outgoing packets and the '
+            'source ports for incoming packets. In server role the ports are '
+            'applied as the source ports for outgoing packets and the '
+            'destination ports for incoming packets'))
   parser.add_argument(
       '-V', '--ip_version', choices=['ipv4', 'ipv6'],
       action='append', default=[], dest='ip_versions',
@@ -114,7 +115,7 @@ def configure(rest_server=False):
   if args.level == 'kernel':
     import nfqueue # Makes imports that only work on Linux.
     nfqueue.configure(args.transport, args.ports, pipes, args.interface,
-                      args.direction, 'ipv4' in args.ip_versions,
+                      args.role, 'ipv4' in args.ip_versions,
                       'ipv6' in args.ip_versions)
   else:
     if args.transport == 'tcp':
